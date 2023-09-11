@@ -78,6 +78,52 @@ class Alumnos
         }
     }
 
+    function selectAllPage($page = 1)
+    {
+       if(!isset($page)){
+            $page = 1;
+        }
+
+        if($page < 1){
+            $page = 1;
+        }
+
+        $query = $this->conn->prepare("SELECT * FROM alumnos");
+        $query->execute();
+        $total = $query->rowCount();
+        $cantidad = 2;
+        $paginas = ceil($total/$cantidad);
+        if($page > $paginas || $page < 1){
+            Flight::halt(403, json_encode([
+                "error" => "Petición incorrecta",
+                "status" => "error"
+            ]));
+        }
+        $inicio = $cantidad * ($page -1);
+        $sentencia =  $this->conn->prepare("SELECT * FROM ALUMNOS LIMIT $inicio,$cantidad");
+        $sentencia->execute();
+        $datos = $sentencia->fetchALL(PDO::FETCH_ASSOC);
+        $array = [];
+        if ($datos) {
+            /*  $arreglo = array("estado"=>"200","datos"=>$datos);*/
+            foreach ($datos as $row) {
+                $array[] = [
+                    "id" => $row["id"],
+                    "names" => $row["nombres"],
+                    "lastname" => $row["apellidos"],
+                    "creado" => $row["created_at"],
+                    "actualizado" => $row["updated_at"]
+                ];
+            }
+
+            $arreglo = array("estado" => "200","paginaactual"=>$page,"numeroPaginas"=>$paginas, "total_rows" => $sentencia->rowCount(), "datos" => $array);
+            flight::json($arreglo);
+        } else {
+            $arreglo = array("estado" => "400", "alumno" => 'No hay alumnos');
+            flight::json($arreglo);
+        }
+    }
+
     function selectOne($id)
     {
 
